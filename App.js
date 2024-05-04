@@ -12,7 +12,6 @@ const getDogs = async () => {
 }
 
 const getFacts = async (numFacts) => {
-    console.log(numFacts)
     const response = await fetch(`https://dogapi.dog/api/v2/facts?limit=${numFacts}`)
     return response.json()
 }
