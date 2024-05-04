@@ -10,6 +10,12 @@ const getDogs = async () => {
     const response = await fetch("https://dogapi.dog/api/v2/breeds")
     return response.json()
 }
+
+const getFacts = async (numFacts) => {
+    console.log(numFacts)
+    const response = await fetch(`https://dogapi.dog/api/v2/facts?limit=${numFacts}`)
+    return response.json()
+}
 export default function App() {
     const queryClient = new QueryClient()
     const [selectedId, setSelectedId] = useState('')
@@ -20,10 +26,29 @@ export default function App() {
         <QueryClientProvider client={queryClient}>
             <View style={styles.container}>
                 <Dogs handleDogClick={handleDogClicked}/>
+                <Facts numFacts={5}/>
                 <Dog dogId={selectedId}/>
             </View>
         </QueryClientProvider>
     );
+}
+
+const Facts = ({numFacts}) => {
+    const {data: facts, isLoading: factsLoading, isError: factsError} = useQuery({
+        queryKey: ['facts'],
+        queryFn: () => getFacts(numFacts)
+    })
+    if (factsLoading) return <Text>Facts Loading...</Text>
+    if (factsError) return <Text>Facts Error...</Text>
+    console.log(facts.data.length)
+    return (
+        <View>
+            <Text>Fact(s):</Text>
+            {
+                facts.data.map(fact => <Text key={fact.id}>{fact.attributes.body}</Text>)
+            }
+        </View>
+    )
 }
 
 const Dog = ({dogId}) => {
@@ -58,7 +83,7 @@ const Dogs = ({handleDogClick}) => {
         )
     }
     return (
-        <View style={styles.container}>
+        <View>
             {
                 dogs.data.map(d => <Text onPress={() => handleDogClick(d.id)} key={d.id}>{d.attributes.name}</Text>)
             }
@@ -73,6 +98,6 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
     },
     dog: {
-        width:'50%'
+        width: '50%'
     }
 });
