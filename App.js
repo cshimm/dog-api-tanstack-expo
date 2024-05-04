@@ -1,27 +1,58 @@
 import {StyleSheet, Text, View} from 'react-native';
 import {QueryClient, QueryClientProvider, useQuery} from "@tanstack/react-query";
+import {useState} from "react";
 
+const getDogById = async (id) => {
+    const response = await fetch(`https://dogapi.dog/api/v2/breeds/${id}`);
+    return response.json()
+}
+const getDogs = async () => {
+    const response = await fetch("https://dogapi.dog/api/v2/breeds")
+    return response.json()
+}
 export default function App() {
     const queryClient = new QueryClient()
+    const [selectedId, setSelectedId] = useState('')
+    const handleDogClicked = (id) => {
+        setSelectedId(id)
+    }
     return (
         <QueryClientProvider client={queryClient}>
-            <Dogs/>
+            <View style={styles.container}>
+                <Dogs handleDogClick={handleDogClicked}/>
+                <Dog dogId={selectedId}/>
+            </View>
         </QueryClientProvider>
     );
 }
 
-const Dogs = () => {
-    const getDogs = async () => {
-        const response = await fetch("https://dogapi.dog/api/v2/breeds")
-        return response.json()
-    }
-    const {data, isLoading, isError} = useQuery({queryKey: ['dogs'], queryFn: getDogs})
-    if (isLoading) {
+const Dog = ({dogId}) => {
+    const {data: dog, isLoading: dogLoading, isError: dogError} = useQuery({
+        queryKey: ['dog', dogId],
+        queryFn: () => getDogById(dogId)
+    })
+    if (dogLoading) return <div>Loading...</div>;
+    if (dogError) return <div>Error fetching item...</div>;
+    return (
+        <View style={styles.dog}>
+            {
+                dog.data.attributes &&
+                <View>
+                    <Text>{dog.data.attributes.name}</Text>
+                    <Text>{dog.data.attributes.description}</Text>
+                </View>
+            }
+        </View>
+    )
+}
+const Dogs = ({handleDogClick}) => {
+    const {data: dogs, isLoading: dogsLoading, isError: dogsError} = useQuery({queryKey: ['dogs'], queryFn: getDogs})
+    if (dogsLoading) {
         return (
             <Text>Loading...</Text>
         )
     }
-    if (isError) {
+    if (dogsError) {
         return (
             <Text>There was an error...</Text>
         )
@@ -29,7 +60,7 @@ const Dogs = () => {
     return (
         <View style={styles.container}>
             {
-                data.data.map(d => <Text key={d.id}>{d.attributes.name}</Text>)
+                dogs.data.map(d => <Text onPress={() => handleDogClick(d.id)} key={d.id}>{d.attributes.name}</Text>)
             }
         </View>
     )
@@ -41,4 +72,7 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         justifyContent: 'center',
     },
+    dog: {
+        width:'50%'
+    }
 });
